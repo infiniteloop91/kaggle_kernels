@@ -1,0 +1,68 @@
+
+
+train_tit <- read.csv("/Users/ERIC/Desktop/KAGGLE/tit_train.csv", sep=",")
+
+
+train_tit[is.na(train_tit)] <- 0
+
+library(caret)
+library(randomForest)
+library(ggplot2)
+
+length(train_tit$Age)
+length(train_tit$Survived)
+
+train_tit$Survived <- as.factor(train_tit$Survived)
+train_tit$Sex <- as.factor(train_tit$Sex)
+train_tit$Pclass <- as.factor(train_tit$Pclass)
+train_tit$Embarked <- as.factor(train_tit$Embarked)
+train_tit$SibSp <- as.factor(train_tit$SibSp)
+
+# Run algorithms using 10-fold cross validation
+control <- trainControl(method="cv", number=10)
+metric <- "Accuracy"
+
+
+# a) linear algorithms
+set.seed(7)
+fit.lda <- train(Survived ~ Age + Sex + Pclass + Fare, data=train_tit, method="lda", metric=metric, trControl=control, na.action = na.exclude)
+# b) nonlinear algorithms
+# CART
+set.seed(7)
+fit.cart <- train(Survived ~ Age + Sex + Pclass + Fare, data=train_tit, method="rpart", metric=metric, trControl=control)
+# kNN
+set.seed(7)
+fit.knn <- train(Survived ~ Age + Sex + Pclass + Fare, data=train_tit, method="knn", metric=metric, trControl=control)
+# c) advanced algorithms
+# SVM
+set.seed(7)
+fit.svm <- train(Survived ~ Age + Sex + Pclass + Fare, data=train_tit, method="svmRadial", metric=metric, trControl=control)
+# Random Forest
+set.seed(7)
+fit.rf <- train(Survived ~ Age + Sex + Pclass + Fare, data=train_tit, method="rf", metric=metric, trControl=control)
+
+summary(resamples(list(svm=fit.svm,knn=fit.knn)))
+
+# summarize accuracy of models
+results <- resamples(list(lda=fit.lda, knn=fit.knn, svm=fit.svm, rf=fit.rf))
+summary(results)
+
+train_test <- read.csv("/Users/ERIC/Desktop/KAGGLE/tit_test.csv", sep=",")
+
+train_test$Survived <- as.factor(train_test $Survived)
+train_test$Sex <- as.factor(train_test $Sex)
+train_test$Pclass <- as.factor(train_test $Pclass)
+train_test$Embarked <- as.factor(train_test $Embarked)
+train_test$SibSp <- as.factor(train_test$SibSp)
+
+train_test[is.na(train_test)] <- 0
+
+Survived <- predict(fit.rf, train_test)
+length(Survived)
+results <- data.frame(Survived)
+
+results[,"PassengerId"] <- train_test$PassengerId
+
+write.csv(results, file="TITANIC_ML.csv")
+
+
